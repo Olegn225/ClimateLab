@@ -28,11 +28,19 @@ def analyze_city_data(df, city_name):
     return city_df, seasonal_stats
 
 def get_weather(city, api_key):
-    # .strip() удалит случайные пробелы из города и ключа, чтобы ссылка не ломалась
-    clean_city = city.strip()
-    clean_key = api_key.strip()
-    url = f"https://api.openweathermap.org{clean_city}&appid={clean_key}&units=metric"
-    return requests.get(url).json()
+    # Базовый адрес без параметров
+    url = "https://api.openweathermap.org"
+    
+    # Передаем параметры отдельным словарем. 
+    # Библиотека requests сама заменит пробелы на нужные символы (например, New York станет New%20York)
+    params = {
+        'q': city.strip(),
+        'appid': api_key.strip(),
+        'units': 'metric'
+    }
+    
+    response = requests.get(url, params=params)
+    return response.json()
 
 # --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
 
