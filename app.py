@@ -27,22 +27,25 @@ def analyze_city_data(df, city_name):
     
     return city_df, seasonal_stats
 
+
 def get_weather(city, api_key):
-    url = "https://api.openweathermap.org"
+    # Используем http вместо https (иногда помогает обойти ошибки SSL в облаке)
+    url = "http://api.openweathermap.org"
     params = {
         'q': city.strip(),
         'appid': api_key.strip(),
         'units': 'metric'
     }
-    
-    response = requests.get(url, params=params)
-    
-    # Пытаемся прочитать JSON только если сервер ответил (даже с ошибкой 401)
     try:
+        # Убираем проверку сертификата (verify=False) для стабильности в облаке
+        response = requests.get(url, params=params, timeout=10, verify=False)
+        # Если статус не 200 и не 401, это может быть проблема сервера
+        if response.status_code not in [200, 401, 404]:
+            return {"cod": response.status_code, "message": f"Server error: {response.text[:50]}"}
         return response.json()
-    except:
-        # Если пришел совсем не JSON (например, ошибка сервера 500 или HTML)
-        return {"cod": "error", "message": "Не удалось прочитать ответ сервера"}
+    except Exception as e:
+        return {"cod": "error", "message": f"Connection failed: {str(e)}"}
+
 
 # --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
 
