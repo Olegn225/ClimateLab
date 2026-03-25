@@ -53,7 +53,7 @@ def get_weather(city, api_key):
 # --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
 
 st.set_page_config(page_title="Мониторинг климата", layout="wide")
-st.title("🌡️ Анализ температурных данных")
+st.title(" Анализ температурных данных")
 
 # Боковая панель для ввода данных
 st.sidebar.header("Настройки")
