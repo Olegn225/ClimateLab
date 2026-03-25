@@ -28,11 +28,7 @@ def analyze_city_data(df, city_name):
     return city_df, seasonal_stats
 
 def get_weather(city, api_key):
-    # Базовый адрес без параметров
     url = "https://api.openweathermap.org"
-    
-    # Передаем параметры отдельным словарем. 
-    # Библиотека requests сама заменит пробелы на нужные символы (например, New York станет New%20York)
     params = {
         'q': city.strip(),
         'appid': api_key.strip(),
@@ -40,7 +36,13 @@ def get_weather(city, api_key):
     }
     
     response = requests.get(url, params=params)
-    return response.json()
+    
+    # Пытаемся прочитать JSON только если сервер ответил (даже с ошибкой 401)
+    try:
+        return response.json()
+    except:
+        # Если пришел совсем не JSON (например, ошибка сервера 500 или HTML)
+        return {"cod": "error", "message": "Не удалось прочитать ответ сервера"}
 
 # --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
 
