@@ -28,8 +28,10 @@ def analyze_city_data(df, city_name):
     return city_df, seasonal_stats
 
 def get_weather(city, api_key):
-    # Простой запрос к API OpenWeatherMap
-    url = f"https://api.openweathermap.org{city}&appid={api_key}&units=metric"
+    # .strip() удалит случайные пробелы из города и ключа, чтобы ссылка не ломалась
+    clean_city = city.strip()
+    clean_key = api_key.strip()
+    url = f"https://api.openweathermap.org{clean_city}&appid={clean_key}&units=metric"
     return requests.get(url).json()
 
 # --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
