@@ -28,24 +28,28 @@ def analyze_city_data(df, city_name):
     return city_df, seasonal_stats
 
 
+
 def get_weather(city, api_key):
-    # Используем прямую подстановку в URL, так как params иногда глючит в облаке
-    city_clean = city.strip().replace(" ", "%20")
-    key_clean = api_key.strip()
+    # Чистый базовый URL без лишних знаков
+    url = "https://api.openweathermap.org"
     
-    url = f"https://api.openweathermap.org{city_clean}&appid={key_clean}&units=metric"
+    # Параметры передаем словарем — библиотека requests сама соберет ссылку правильно
+    params = {
+        'q': city.strip(),
+        'appid': api_key.strip(),
+        'units': 'metric'
+    }
     
     try:
-        # Устанавливаем принудительно заголовки и таймаут
-        response = requests.get(url, headers={"Accept": "application/json"}, timeout=15)
+        # Увеличиваем таймаут и добавляем заголовки для надежности
+        response = requests.get(url, params=params, timeout=15)
         
-        # Если пришел пустой ответ (что у нас и происходит)
-        if not response.text:
-            return {"cod": "error", "message": "Сервер вернул пустой ответ. Возможно, ключ еще не активен."}
-            
+        # Если сервер ответил хоть что-то (JSON)
         return response.json()
     except Exception as e:
+        # Если вообще нет связи
         return {"cod": "error", "message": f"Ошибка сети: {str(e)}"}
+
 
 
 # --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
