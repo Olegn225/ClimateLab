@@ -30,24 +30,30 @@ def analyze_city_data(df, city_name):
 
 
 def get_weather(city, api_key):
-    # Чистый базовый URL без лишних знаков
     url = "https://api.openweathermap.org"
     
-    # Параметры передаем словарем — библиотека requests сама соберет ссылку правильно
+    # Параметры запроса
     params = {
         'q': city.strip(),
         'appid': api_key.strip(),
         'units': 'metric'
     }
     
+    # Заголовки, чтобы сервер не блокировал запрос от Python
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
     try:
-        # Увеличиваем таймаут и добавляем заголовки для надежности
-        response = requests.get(url, params=params, timeout=15)
+        # Делаем запрос с таймаутом и заголовками
+        response = requests.get(url, params=params, headers=headers, timeout=15)
         
-        # Если сервер ответил хоть что-то (JSON)
+        # Проверяем, не пустой ли ответ (чтобы не было ошибки JSON)
+        if not response.text:
+            return {"cod": "error", "message": "Сервер вернул пустой ответ. Ключ еще активируется."}
+            
         return response.json()
     except Exception as e:
-        # Если вообще нет связи
         return {"cod": "error", "message": f"Ошибка сети: {str(e)}"}
 
 
