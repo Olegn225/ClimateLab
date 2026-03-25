@@ -5,23 +5,22 @@ import requests
 import os
 from datetime import datetime
 
-# --- 1. ФУНКЦИИ ДЛЯ АНАЛИЗА ---
-
+# функции анализа
 def analyze_city_data(df, city_name):
-    # Фильтруем данные по выбранному городу
+    # берём данные по выбранному городу
     city_df = df[df['city'] == city_name].copy().sort_values('timestamp')
     
-    # Считаем скользящее среднее (окно 30 дней)
+    # счёт скользящего среднего - окно 30 дней
     city_df['rolling_mean'] = city_df['temperature'].rolling(window=30).mean()
     
-    # Считаем среднее и std для каждого сезона (историческая норма)
+    # счёт среднего и стандартного отклонения для каждого сезона
     seasonal_stats = city_df.groupby('season')['temperature'].agg(['mean', 'std']).reset_index()
     seasonal_stats.columns = ['season', 'mean_seasonal', 'std_seasonal']
     
-    # Объединяем основную таблицу со статистикой сезонов
+    # объединяем с основной таблицей со статистикой сезонов
     city_df = city_df.merge(seasonal_stats, on='season', how='left')
     
-    # Выявляем аномалии (выход за пределы mean ± 2*std)
+    # аномалии - выход за пределы сезонной +/- двух отколнений
     city_df['is_anomaly'] = (city_df['temperature'] > city_df['mean_seasonal'] + 2 * city_df['std_seasonal']) | \
                             (city_df['temperature'] < city_df['mean_seasonal'] - 2 * city_df['std_seasonal'])
     
@@ -32,14 +31,14 @@ def analyze_city_data(df, city_name):
 def get_weather(city, api_key):
     url = "https://api.openweathermap.org"
     
-    # Параметры запроса
+    # запрос
     params = {
         'q': city.strip(),
         'appid': api_key.strip(),
         'units': 'metric'
     }
     
-    # Заголовки, чтобы сервер не блокировал запрос от Python
+    # заголовки, чтобы сервер не блокировал запрос от Python
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -58,8 +57,7 @@ def get_weather(city, api_key):
 
 
 
-# --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
-
+# Интерфейс в стримлит
 st.set_page_config(page_title="Мониторинг климата", layout="wide")
 st.title(" Анализ температурных данных")
 
@@ -74,40 +72,40 @@ if uploaded_file is not None:
 elif os.path.exists("temperature_data.csv"):
     df = pd.read_csv("temperature_data.csv")
 
-# Ввод API ключа
+# ввод API ключа
 api_key = st.sidebar.text_input("Введите API Ключ", type="password")
 
-# Основная логика приложения
+# основная логика
 if df is not None:
     # Выбор города
     cities = df['city'].unique()
     selected_city = st.sidebar.selectbox("Выберите город для анализа", cities)
     
-    # Проводим расчеты
+    # расчёты
     city_data, seasonal_profiles = analyze_city_data(df, selected_city)
 
-    # 1. Описательная статистика
+    # статистика
     st.subheader(f"Историческая статистика по городу {selected_city}")
     st.write(city_data[['temperature', 'rolling_mean']].describe())
 
-    # 2. Интерактивный график
+    # график
     st.subheader("Временной ряд температур")
     fig = go.Figure()
-    # Линия температуры
+    # линия температуры
     fig.add_trace(go.Scatter(x=city_data['timestamp'], y=city_data['temperature'], name='Температура', opacity=0.4))
-    # Линия тренда
+    # линия тренда
     fig.add_trace(go.Scatter(x=city_data['timestamp'], y=city_data['rolling_mean'], name='Тренд (30 дней)', line=dict(color='orange')))
-    # Точки аномалий
+    # точки аномалий
     anomalies = city_data[city_data['is_anomaly']]
     fig.add_trace(go.Scatter(x=anomalies['timestamp'], y=anomalies['temperature'], mode='markers', name='Аномалии', marker=dict(color='red')))
     
     st.plotly_chart(fig, use_container_width=True)
 
-    # 3. Сезонные профили (дополнительное исследование)
+    # сезоны
     st.subheader("Нормы по сезонам")
     st.table(seasonal_profiles.set_index('season'))
 
-    # 4. Работа с текущей погодой через API
+    # текущая погода через API
     if api_key:
         st.divider()
         st.subheader(f"Мониторинг текущей температуры в {selected_city}")
@@ -126,11 +124,11 @@ if df is not None:
                                9: "autumn", 10: "autumn", 11: "autumn"}
             current_season = month_to_season[month]
             
-            # Сравниваем с нормой для этого сезона
+            # сравниваем с нормой для этого сезона
             stats = seasonal_profiles[seasonal_profiles['season'] == current_season].iloc[0]
             is_normal = (stats['mean_seasonal'] - 2*stats['std_seasonal']) <= current_temp <= (stats['mean_seasonal'] + 2*stats['std_seasonal'])
             
-            # Выводим результат
+            # вывод
             col1, col2 = st.columns(2)
             col1.metric("Температура сейчас", f"{current_temp} °C")
             if is_normal:
@@ -138,9 +136,9 @@ if df is not None:
             else:
                 col2.error(f"Аномалия! Температура вне нормы для сезона {current_season}")
         
-        # Если API выдал ошибку (например, 401 - неверный ключ)
+        # если API выдал ошибку
         else:
-            # ТЗ: выводим весь JSON с ошибкой
+            # выводим весь ответ
             st.error(f"Ошибка API: {weather_response}")
     else:
         st.info("Введите API-ключ в боковой панели, чтобы увидеть текущую погоду.")
