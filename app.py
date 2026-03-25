@@ -29,25 +29,23 @@ def analyze_city_data(df, city_name):
 
 
 def get_weather(city, api_key):
-    # Возвращаемся на https (это стандарт)
-    url = "https://api.openweathermap.org"
-    params = {
-        'q': city.strip(),
-        'appid': api_key.strip(),
-        'units': 'metric'
-    }
-    # Добавляем заголовки, чтобы запрос выглядел как от обычного браузера
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    # Используем прямую подстановку в URL, так как params иногда глючит в облаке
+    city_clean = city.strip().replace(" ", "%20")
+    key_clean = api_key.strip()
+    
+    url = f"https://api.openweathermap.org{city_clean}&appid={key_clean}&units=metric"
     
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
-        # Если статус не 200, мы все равно пробуем прочитать JSON (там может быть ошибка 401)
+        # Устанавливаем принудительно заголовки и таймаут
+        response = requests.get(url, headers={"Accept": "application/json"}, timeout=15)
+        
+        # Если пришел пустой ответ (что у нас и происходит)
+        if not response.text:
+            return {"cod": "error", "message": "Сервер вернул пустой ответ. Возможно, ключ еще не активен."}
+            
         return response.json()
     except Exception as e:
-        # Если совсем беда со связью
-        return {"cod": "error", "message": f"Сетевая ошибка: {str(e)}"}
+        return {"cod": "error", "message": f"Ошибка сети: {str(e)}"}
 
 
 # --- 2. ИНТЕРФЕЙС (STREAMLIT) ---
