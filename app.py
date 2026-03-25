@@ -65,7 +65,7 @@ st.title(" Анализ температурных данных")
 st.sidebar.header("Настройки")
 uploaded_file = st.sidebar.file_uploader("Загрузите исторический CSV", type="csv")
 
-# Пытаемся взять файл из репозитория, если пользователь ничего не загрузил
+# файл из репозитория, если не загрузили
 df = None
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
